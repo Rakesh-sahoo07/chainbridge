@@ -1,0 +1,147 @@
+# ChainBridge Protocol - Security & Build Artifacts
+
+# 🔐 CRITICAL SECURITY - Never commit these files
+**/.env
+**/.env.*
+**/deployer-key.json
+**/deployment.json
+**/*private*
+**/*secret*
+**/*key*
+.aptos/
+.foundry/
+
+# 📁 Environment Files (all variants)
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.staging
+
+# 🔑 Blockchain & Wallet Files
+.secret
+.private
+wallet.json
+keystore/
+private-keys/
+mnemonics.txt
+seed-phrase.txt
+
+# 📦 Dependencies
+node_modules/
+yarn.lock
+package-lock.json
+.pnp
+.pnp.js
+
+# 🏗️ Build Artifacts
+build/
+dist/
+out/
+artifacts/
+cache/
+typechain/
+typechain-types/
+
+# 📊 Coverage & Testing
+coverage/
+coverage.json
+.nyc_output/
+test-results/
+allure-results/
+
+# 🛠️ Development Tools
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 📱 OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 📝 Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# 🔄 Runtime
+.npm
+.eslintcache
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.vuepress/dist
+
+# 🧪 Testing
+.nyc_output
+lcov.info
+
+# 📈 Analytics
+.vercel
+.netlify
+
+# 🚀 Deployment
+.firebase/
+.serverless/
+
+# Hardhat
+cache/
+artifacts/
+coverage/
+coverage.json
+typechain/
+typechain-types/
+
+# Foundry
+cache/
+out/
+broadcast/
+
+# Move / Aptos
+build/
+.aptos/
+
+# Local development
+localhost.key
+localhost.crt
+
+# Backup files
+*.backup
+*.bak
+*.tmp
+*.temp
+
+# IDE files
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# Temporary files
+.tmp/
+temp/
+tmp/

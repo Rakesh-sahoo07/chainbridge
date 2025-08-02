@@ -2,7 +2,7 @@ import React from 'react';
 import './index.css';
 import { WalletProvider, useWallet } from './contexts/WalletContext';
 import { WalletConnector } from './components/WalletConnector';
-import { SwapInterface } from './components/SwapInterface';
+import { BridgeInterface } from './components/BridgeInterface';
 
 function AppContent() {
   const { walletState } = useWallet();
@@ -26,14 +26,14 @@ function AppContent() {
             </div>
             
             <nav className="hidden md:flex items-center space-x-8 mr-8">
-              <a href="#swap" className="text-gray-300 hover:text-green-400 transition-colors">
-                Swap
+              <a href="#bridge" className="text-gray-300 hover:text-green-400 transition-colors">
+                Bridge
               </a>
               <a href="https://github.com/Rakesh-sahoo07/chainbridge" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-green-400 transition-colors">
                 GitHub
               </a>
-              <a href="https://sepolia.etherscan.io/address/0x1B361EEEf61b67e66cF7e8C0309cb03EDc34F4F8" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-green-400 transition-colors">
-                Contracts
+              <a href="https://sepolia.etherscan.io/address/0x4f1e1b041A9Fc9347731E893d1c06e6c8FbceDb0" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-green-400 transition-colors">
+                Bridge
               </a>
             </nav>
             
@@ -48,32 +48,32 @@ function AppContent() {
               ChainBridge Protocol
             </h1>
             <p className="text-xl text-gray-300 mb-2">
-              Cross-chain atomic swaps between Ethereum and Aptos
+              Single-transaction cross-chain bridge between Ethereum and Aptos
             </p>
             <p className="text-sm text-green-400 neon-text">
-              🌉 Bridging DeFi across chains with atomic swap technology
+              🌉 Simple liquidity bridge with 1:1 mUSDC transfers
             </p>
           </div>
           
-          {/* Swap Interface */}
-          <SwapInterface walletState={walletState} />
+          {/* Bridge Interface */}
+          <BridgeInterface walletState={walletState} />
 
           {/* Features Section */}
           <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="cyber-card p-6 text-center">
-              <div className="text-4xl mb-4">⚛️</div>
-              <h3 className="text-lg font-semibold text-green-400 mb-2">Atomic Swaps</h3>
-              <p className="text-sm text-gray-400">Trustless cross-chain exchanges with cryptographic guarantees</p>
+              <div className="text-4xl mb-4">🌉</div>
+              <h3 className="text-lg font-semibold text-green-400 mb-2">Liquidity Bridge</h3>
+              <p className="text-sm text-gray-400">Single-transaction cross-chain transfers with pre-funded reserves</p>
             </div>
             <div className="cyber-card p-6 text-center">
-              <div className="text-4xl mb-4">🔒</div>
-              <h3 className="text-lg font-semibold text-green-400 mb-2">Secure Protocol</h3>
-              <p className="text-sm text-gray-400">Hashlock/timelock mechanisms ensure complete security</p>
+              <div className="text-4xl mb-4">🎯</div>
+              <h3 className="text-lg font-semibold text-green-400 mb-2">1:1 Direct</h3>
+              <p className="text-sm text-gray-400">Perfect 1:1 mUSDC transfers with no slippage</p>
             </div>
             <div className="cyber-card p-6 text-center">
               <div className="text-4xl mb-4">⚡</div>
-              <h3 className="text-lg font-semibold text-green-400 mb-2">Fast Execution</h3>
-              <p className="text-sm text-gray-400">Complete swaps in 2-5 minutes with minimal gas fees</p>
+              <h3 className="text-lg font-semibold text-green-400 mb-2">Single Transaction</h3>
+              <p className="text-sm text-gray-400">Complete bridge in 1 minute with one wallet approval</p>
             </div>
           </div>
 
@@ -88,12 +88,12 @@ function AppContent() {
               <div className="text-sm text-gray-400">Uptime</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-green-400 mb-2">&lt;5min</div>
-              <div className="text-sm text-gray-400">Avg Swap Time</div>
+              <div className="text-3xl font-bold text-green-400 mb-2">&lt;1min</div>
+              <div className="text-sm text-gray-400">Bridge Time</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-green-400 mb-2">$2.50</div>
-              <div className="text-sm text-gray-400">Avg Gas Fee</div>
+              <div className="text-3xl font-bold text-green-400 mb-2">$1.25</div>
+              <div className="text-sm text-gray-400">Bridge Fee</div>
             </div>
           </div>
 
@@ -112,22 +112,22 @@ function AppContent() {
                 <div className="w-16 h-16 bg-green-900-10 border border-green-500-20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl">2️⃣</span>
                 </div>
-                <h3 className="text-lg font-semibold text-white mb-2">Initiate Swap</h3>
-                <p className="text-sm text-gray-400">Lock your tokens on the source chain with hashlock protection</p>
+                <h3 className="text-lg font-semibold text-white mb-2">Initiate Bridge</h3>
+                <p className="text-sm text-gray-400">Deposit tokens to bridge contract with single wallet approval</p>
               </div>
               <div className="text-center">
                 <div className="w-16 h-16 bg-green-900-10 border border-green-500-20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl">3️⃣</span>
                 </div>
-                <h3 className="text-lg font-semibold text-white mb-2">Atomic Exchange</h3>
-                <p className="text-sm text-gray-400">Smart contracts coordinate the exchange across both blockchains</p>
+                <h3 className="text-lg font-semibold text-white mb-2">Relayer Processing</h3>
+                <p className="text-sm text-gray-400">Automated relayer monitors events and processes cross-chain transfer</p>
               </div>
               <div className="text-center">
                 <div className="w-16 h-16 bg-green-900-10 border border-green-500-20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl">4️⃣</span>
                 </div>
                 <h3 className="text-lg font-semibold text-white mb-2">Receive Tokens</h3>
-                <p className="text-sm text-gray-400">Get your tokens on the destination chain with atomic guarantees</p>
+                <p className="text-sm text-gray-400">Get your tokens instantly from destination bridge reserves</p>
               </div>
             </div>
           </div>
@@ -145,8 +145,8 @@ function AppContent() {
                 <a href="https://github.com/Rakesh-sahoo07/chainbridge" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:text-green-300 transition-colors">
                   GitHub Repository
                 </a>
-                <a href="https://sepolia.etherscan.io/address/0x1B361EEEf61b67e66cF7e8C0309cb03EDc34F4F8" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:text-green-300 transition-colors">
-                  Ethereum Contract
+                <a href="https://sepolia.etherscan.io/address/0x4f1e1b041A9Fc9347731E893d1c06e6c8FbceDb0" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:text-green-300 transition-colors">
+                  Ethereum Bridge
                 </a>
                 <a href="https://explorer.aptoslabs.com/account/0xe206191aa9fe73c28a3c559112354dc5f043440b0be3e3283ca470be2557bcd4?network=testnet" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:text-green-300 transition-colors">
                   Aptos Contract

@@ -1,0 +1,29 @@
+{
+  "name": "chainbridge-relayer",
+  "version": "1.0.0",
+  "description": "Cross-chain bridge relayer service for ChainBridge Protocol",
+  "main": "relayer.js",
+  "scripts": {
+    "start": "node relayer.js",
+    "dev": "nodemon relayer.js",
+    "health": "node -e \"const {CrossChainBridgeRelayer} = require('./relayer.js'); const relayer = new CrossChainBridgeRelayer(); relayer.getStatus().then(console.log);\""
+  },
+  "dependencies": {
+    "ethers": "^6.7.1",
+    "aptos": "^1.21.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "bridge",
+    "cross-chain",
+    "ethereum",
+    "aptos",
+    "defi",
+    "relayer"
+  ],
+  "author": "ChainBridge Protocol",
+  "license": "MIT"
+}

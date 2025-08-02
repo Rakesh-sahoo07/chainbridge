@@ -22,8 +22,8 @@ interface SwapInterfaceProps {
 }
 
 export const SwapInterface: React.FC<SwapInterfaceProps> = ({ walletState }) => {
-  const [fromToken, setFromToken] = useState('mUSDC');
-  const [toToken, setToToken] = useState('APT');
+  const [fromToken, setFromToken] = useState('mUSDC-ETH');
+  const [toToken, setToToken] = useState('mUSDC-APT');
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
   const [isSwapping, setIsSwapping] = useState(false);
@@ -42,22 +42,38 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ walletState }) => 
 
   // Token options - Based on ACTUALLY DEPLOYED smart contracts only
   const tokens = {
-    mUSDC: { 
-      name: 'Mock USDC', 
+    'mUSDC-ETH': { 
+      name: 'Mock USDC (Ethereum)', 
       chain: 'ethereum', 
       decimals: 6,
       address: '0x7a265Db61E004f4242fB322fa72F8a52D2B06664',
-      symbol: 'mUSDC'
+      symbol: 'mUSDC',
+      displayName: 'mUSDC'
+    },
+    'mUSDC-APT': { 
+      name: 'Mock USDC (Aptos)', 
+      chain: 'aptos', 
+      decimals: 6,
+      address: '0xe206191aa9fe73c28a3c559112354dc5f043440b0be3e3283ca470be2557bcd4::mock_usdc::MockUSDC',
+      symbol: 'mUSDC',
+      displayName: 'mUSDC'
     },
     APT: { 
       name: 'AptosCoin', 
       chain: 'aptos', 
       decimals: 8,
       address: '0x1::aptos_coin::AptosCoin',
-      symbol: 'APT'
+      symbol: 'APT',
+      displayName: 'APT'
     },
-    // Note: Only including verified deployed tokens
-    // mUSDT and mDAI removed until contracts are confirmed deployed
+    // Note: Now we have the same token (mUSDC) on both chains for better UX!
+    // Users can swap mUSDC between Ethereum and Aptos seamlessly
+  };
+
+  // Helper function to convert UI token keys to service token symbols
+  const getTokenSymbol = (tokenKey: string) => {
+    const tokenData = tokens[tokenKey as keyof typeof tokens];
+    return tokenData ? tokenData.symbol : tokenKey;
   };
 
   // Check if swap is valid
@@ -121,18 +137,67 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ walletState }) => 
           ? walletState.ethereum.address || '0x0000000000000000000000000000000000000000'
           : walletState.aptos.address || '0x0000000000000000000000000000000000000000';
 
-        // Get quote from 1inch
-        const quote = await getOneInchCrossChainQuote({
-          fromTokenAddress: fromTokenData.address,
-          toTokenAddress: toTokenData.address,
-          amount: fromAmount,
-          fromNetwork,
-          toNetwork,
-          walletAddress,
-        });
+        // Check if this is a same-token cross-chain transfer (1:1)
+        const isSameToken = (
+          (fromTokenData.symbol === toTokenData.symbol) &&
+          (fromTokenData.chain !== toTokenData.chain)
+        );
+        
+        let quote;
+        
+        if (isSameToken) {
+          // Direct 1:1 swap for same token cross-chain transfers
+          console.log('🎯 Detected same-token cross-chain transfer - using 1:1 rate');
+          quote = {
+            fromToken: {
+              address: fromTokenData.address,
+              symbol: fromTokenData.symbol,
+              decimals: fromTokenData.decimals
+            },
+            toToken: {
+              address: toTokenData.address,
+              symbol: toTokenData.symbol,
+              decimals: toTokenData.decimals
+            },
+            fromAmount: fromAmount,
+            toAmount: fromAmount, // 1:1 conversion!
+            estimatedGas: '0.002',
+            protocols: ['Direct Contract Swap'],
+            estimatedProcessingTime: 300, // 5 minutes
+            fees: {
+              protocolFee: '0.001',
+              networkFee: '0.001',
+              totalFee: '0.002'
+            },
+            route: 'Direct Contract Swap',
+            priceImpact: 0 // 0% for 1:1
+          };
+          setQuoteError(''); // Clear any previous errors
+        } else {
+          // Use 1inch for different token swaps
+          quote = await getOneInchCrossChainQuote({
+            fromTokenAddress: fromTokenData.address,
+            toTokenAddress: toTokenData.address,
+            amount: fromAmount,
+            fromNetwork,
+            toNetwork,
+            walletAddress,
+          });
+        }
 
         setQuoteData(quote);
         setToAmount(quote.toAmount);
+        
+        // Log the quote type for debugging
+        console.log('📊 Quote type:', {
+          isSameToken,
+          fromSymbol: fromTokenData.symbol,
+          toSymbol: toTokenData.symbol,
+          fromChain: fromTokenData.chain,
+          toChain: toTokenData.chain,
+          rate: `1:${parseFloat(quote.toAmount) / parseFloat(quote.fromAmount)}`,
+          type: isSameToken ? 'Direct 1:1' : '1inch Market'
+        });
 
       } catch (error) {
         console.error('Failed to get 1inch quote:', error);
@@ -140,10 +205,16 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ walletState }) => 
         
         // Fallback to local calculation
         let rate = 1.0;
-        if (fromTokenData.chain === 'ethereum' && toToken === 'APT') {
-          rate = fromToken === 'mUSDC' || fromToken === 'mUSDT' ? 0.12 : 0.12;
-        } else if (fromToken === 'APT' && toTokenData.chain === 'ethereum') {
+        const fromSymbol = getTokenSymbol(fromToken);
+        const toSymbol = getTokenSymbol(toToken);
+        
+        if (fromTokenData.chain === 'ethereum' && toSymbol === 'APT') {
+          rate = fromSymbol === 'mUSDC' ? 0.12 : 0.12;
+        } else if (fromSymbol === 'APT' && toTokenData.chain === 'ethereum') {
           rate = 8.3;
+        } else if (fromSymbol === 'mUSDC' && toSymbol === 'mUSDC') {
+          // mUSDC to mUSDC cross-chain should be 1:1 minus fees
+          rate = 1.0;
         }
         
         const feeRate = 0.999;
@@ -193,8 +264,8 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ walletState }) => 
       
       const result = await initiateAtomicSwap(
         {
-          fromToken,
-          toToken,
+          fromToken: getTokenSymbol(fromToken),
+          toToken: getTokenSymbol(toToken),
           fromAmount,
           fromChain: fromTokenData.chain as 'ethereum' | 'aptos',
           toChain: toTokenData.chain as 'ethereum' | 'aptos',
@@ -375,7 +446,7 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ walletState }) => 
                 >
                   {Object.entries(tokens).map(([symbol, data]) => (
                     <option key={symbol} value={symbol}>
-                      {data.symbol} - {data.chain === 'ethereum' ? 'Ethereum' : 'Aptos'}
+                      {data.displayName} ({data.chain === 'ethereum' ? 'ETH' : 'APT'})
                     </option>
                   ))}
                 </select>
@@ -445,7 +516,7 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ walletState }) => 
                 >
                   {Object.entries(tokens).map(([symbol, data]) => (
                     <option key={symbol} value={symbol}>
-                      {data.symbol} - {data.chain === 'ethereum' ? 'Ethereum' : 'Aptos'}
+                      {data.displayName} ({data.chain === 'ethereum' ? 'ETH' : 'APT'})
                     </option>
                   ))}
                 </select>
@@ -522,9 +593,36 @@ export const SwapInterface: React.FC<SwapInterfaceProps> = ({ walletState }) => 
             {fromAmount && toAmount && (
               <div className="flex justify-between text-sm">
                 <span className="text-gray-400">Exchange Rate</span>
-                <span className="text-gray-300">
-                  1 {fromToken} = {(parseFloat(toAmount) / parseFloat(fromAmount)).toFixed(6)} {toToken}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-300">
+                    1 {fromToken} = {(parseFloat(toAmount) / parseFloat(fromAmount)).toFixed(6)} {toToken}
+                  </span>
+                  {/* Show 1:1 indicator for same-token transfers */}
+                  {(() => {
+                    const fromTokenData = tokens[fromToken as keyof typeof tokens];
+                    const toTokenData = tokens[toToken as keyof typeof tokens];
+                    const isSameToken = (
+                      (fromTokenData.symbol === toTokenData.symbol) &&
+                      (fromTokenData.chain !== toTokenData.chain)
+                    );
+                    const rate = parseFloat(toAmount) / parseFloat(fromAmount);
+                    
+                    if (isSameToken && Math.abs(rate - 1) < 0.001) {
+                      return (
+                        <span className="text-green-400 font-semibold text-xs bg-green-900/30 px-2 py-1 rounded">
+                          🎯 1:1 DIRECT
+                        </span>
+                      );
+                    } else if (isSameToken && Math.abs(rate - 1) >= 0.001) {
+                      return (
+                        <span className="text-red-400 font-semibold text-xs bg-red-900/30 px-2 py-1 rounded">
+                          ⚠️ NOT 1:1
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()} 
+                </div>
               </div>
             )}
             

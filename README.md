@@ -1,4 +1,4 @@
-# 🌉 ChainBridge Protocol
+# 🌉 ChainShift
 
 **Bridging DeFi across chains with atomic swap technology**
 
@@ -39,7 +39,7 @@ ChainBridge Protocol implements a trustless cross-chain atomic swap mechanism th
 ## 🔥 **Live Deployments**
 
 ### **Ethereum (Sepolia Testnet)**
-- **CrossChainSwap**: [`0x1B361EEEf61b67e66cF7e8C0309cb03EDc34F4F8`](https://sepolia.etherscan.io/address/0x1B361EEEf61b67e66cF7e8C0309cb03EDc34F4F8)
+- **CrossChainSwap**: [`0x4f1e1b041A9Fc9347731E893d1c06e6c8FbceDb0`](https://sepolia.etherscan.io/address/0x4f1e1b041A9Fc9347731E893d1c06e6c8FbceDb0)
 - **TokenManager**: [`0x2A809295cc916E85cF998eA8f8559cfeB85f2e28`](https://sepolia.etherscan.io/address/0x2A809295cc916E85cF998eA8f8559cfeB85f2e28)
 
 ### **Aptos (Testnet)**

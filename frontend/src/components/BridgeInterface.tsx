@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { initiateBridgeTransfer, type BridgeParams, type BridgeResult } from '../services/bridgeService';
 import { bridgeMonitor, type BridgeMonitorResult } from '../services/bridgeMonitor';
+import { useToast } from '../contexts/ToastContext';
+import './BridgeInterface.css';
 
 interface WalletState {
   ethereum: {
@@ -17,63 +19,128 @@ interface WalletState {
 
 interface BridgeInterfaceProps {
   walletState: WalletState;
+  hideWalletStatus?: boolean;
 }
 
-export const BridgeInterface: React.FC<BridgeInterfaceProps> = ({ walletState }) => {
-  const [fromToken, setFromToken] = useState('mUSDC-ETH');
-  const [toToken, setToToken] = useState('mUSDC-APT');
+export const BridgeInterface: React.FC<BridgeInterfaceProps> = ({ walletState, hideWalletStatus = false }) => {
+  const { showSuccess, showError, showWarning, showInfo } = useToast();
+  const [selectedChain, setSelectedChain] = useState<'ethereum' | 'aptos'>('ethereum');
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
   const [isBridging, setIsBridging] = useState(false);
   const [bridgeResult, setBridgeResult] = useState<BridgeResult | null>(null);
   const [bridgeStatus, setBridgeStatus] = useState<string>('');
   const [monitorResult, setMonitorResult] = useState<BridgeMonitorResult | null>(null);
+  const [ethMUSDCBalance, setEthMUSDCBalance] = useState<string>('0.00');
+  const [aptosMUSDCBalance, setAptosMUSDCBalance] = useState<string>('0.00');
 
-  // Token options - mUSDC cross-chain bridge
-  const tokens = {
-    'mUSDC-ETH': { 
-      name: 'Mock USDC (Ethereum)', 
-      chain: 'ethereum', 
-      decimals: 6,
-      address: '0x7a265Db61E004f4242fB322fa72F8a52D2B06664',
-      symbol: 'mUSDC',
-      displayName: 'mUSDC'
-    },
-    'mUSDC-APT': { 
-      name: 'Mock USDC (Aptos)', 
-      chain: 'aptos', 
-      decimals: 6,
-      address: '0xe206191aa9fe73c28a3c559112354dc5f043440b0be3e3283ca470be2557bcd4::mock_usdc::MockUSDC',
-      symbol: 'mUSDC',
-      displayName: 'mUSDC'
-    },
+  // Format balance to 2 decimal places
+  const formatBalance = (balance: string | undefined): string => {
+    if (!balance || balance === '0' || balance === '0.0') return '0.00';
+    const num = parseFloat(balance);
+    if (isNaN(num)) return '0.00';
+    return num.toFixed(2);
   };
+
+  // Fetch mUSDC balances
+  const fetchMUSDCBalances = async () => {
+    try {
+      // Fetch Ethereum mUSDC balance
+      if (walletState.ethereum.connected && (window as any).ethereum) {
+        const provider = new (await import('ethers')).ethers.BrowserProvider((window as any).ethereum);
+        const mUSDCContract = new (await import('ethers')).ethers.Contract(
+          '0x7a265Db61E004f4242fB322fa72F8a52D2B06664',
+          ['function balanceOf(address) view returns (uint256)'],
+          provider
+        );
+        const balance = await mUSDCContract.balanceOf(walletState.ethereum.address);
+        const formattedBalance = (await import('ethers')).ethers.formatUnits(balance, 6);
+        setEthMUSDCBalance(formatBalance(formattedBalance));
+      }
+
+      // Fetch Aptos mUSDC balance
+      if (walletState.aptos.connected && (window as any).aptos) {
+        const { Aptos, AptosConfig, Network } = await import('@aptos-labs/ts-sdk');
+        const config = new AptosConfig({ network: Network.TESTNET });
+        const client = new Aptos(config);
+        
+        try {
+          const resource = await client.getAccountResource({
+            accountAddress: walletState.aptos.address!,
+            resourceType: '0x1::coin::CoinStore<0xe206191aa9fe73c28a3c559112354dc5f043440b0be3e3283ca470be2557bcd4::mock_usdc::MockUSDC>'
+          });
+          const balance = (resource as any).coin.value;
+          const formattedBalance = (parseInt(balance) / 1000000).toString();
+          setAptosMUSDCBalance(formatBalance(formattedBalance));
+        } catch (error) {
+          // Account might not have mUSDC yet
+          setAptosMUSDCBalance('0.00');
+        }
+      }
+    } catch (error) {
+      console.log('Error fetching mUSDC balances:', error);
+    }
+  };
+
+  // Fetch balances when wallets connect
+  useEffect(() => {
+    if (walletState.ethereum.connected || walletState.aptos.connected) {
+      fetchMUSDCBalances();
+    }
+  }, [walletState.ethereum.connected, walletState.aptos.connected, walletState.ethereum.address, walletState.aptos.address]);
+
+  // Token configurations based on selected chain
+  const getTokenConfig = () => {
+    if (selectedChain === 'ethereum') {
+      return {
+        fromToken: {
+          name: 'mUSDC',
+          chain: 'ethereum' as const,
+          symbol: 'mUSDC ETH',
+          decimals: 6,
+          address: '0x7a265Db61E004f4242fB322fa72F8a52D2B06664',
+          balance: ethMUSDCBalance
+        },
+        toToken: {
+          name: 'mUSDC',
+          chain: 'aptos' as const,
+          symbol: 'mUSDC APT',
+          decimals: 6,
+          address: '0xe206191aa9fe73c28a3c559112354dc5f043440b0be3e3283ca470be2557bcd4::mock_usdc::MockUSDC',
+          balance: aptosMUSDCBalance
+        }
+      };
+    } else {
+      return {
+        fromToken: {
+          name: 'mUSDC',
+          chain: 'aptos' as const,
+          symbol: 'mUSDC APT',
+          decimals: 6,
+          address: '0xe206191aa9fe73c28a3c559112354dc5f043440b0be3e3283ca470be2557bcd4::mock_usdc::MockUSDC',
+          balance: aptosMUSDCBalance
+        },
+        toToken: {
+          name: 'mUSDC',
+          chain: 'ethereum' as const,
+          symbol: 'mUSDC ETH',
+          decimals: 6,
+          address: '0x7a265Db61E004f4242fB322fa72F8a52D2B06664',
+          balance: ethMUSDCBalance
+        }
+      };
+    }
+  };
+
+  const { fromToken, toToken } = getTokenConfig();
 
   // Check if bridge is valid
   const isValidBridge = () => {
-    const fromTokenData = tokens[fromToken as keyof typeof tokens];
-    const toTokenData = tokens[toToken as keyof typeof tokens];
-    
-    // Must be cross-chain bridge
-    if (fromTokenData.chain === toTokenData.chain) return false;
-    
-    // Must be same token (mUSDC ↔ mUSDC)
-    if (fromTokenData.symbol !== toTokenData.symbol) return false;
-    
     // Must have valid amount
     if (!fromAmount || parseFloat(fromAmount) <= 0) return false;
     
-    // Must have source wallet connected
-    const sourceWalletConnected = 
-      (fromTokenData.chain === 'ethereum' && walletState.ethereum.connected) ||
-      (fromTokenData.chain === 'aptos' && walletState.aptos.connected);
-    
-    // Must have destination wallet connected
-    const destWalletConnected = 
-      (toTokenData.chain === 'ethereum' && walletState.ethereum.connected) ||
-      (toTokenData.chain === 'aptos' && walletState.aptos.connected);
-    
-    return sourceWalletConnected && destWalletConnected;
+    // Must have both wallets connected
+    return walletState.ethereum.connected && walletState.aptos.connected;
   };
 
   // Update quote when amount changes (1:1 for mUSDC bridge)
@@ -82,33 +149,21 @@ export const BridgeInterface: React.FC<BridgeInterfaceProps> = ({ walletState })
       setToAmount('');
       return;
     }
-
-    const fromTokenData = tokens[fromToken as keyof typeof tokens];
-    const toTokenData = tokens[toToken as keyof typeof tokens];
-
-    // Must be cross-chain and same token
-    if (fromTokenData.chain === toTokenData.chain || fromTokenData.symbol !== toTokenData.symbol) {
-      setToAmount('');
-      return;
-    }
-
     // Always 1:1 for mUSDC bridge
     setToAmount(fromAmount);
-  }, [fromAmount, fromToken, toToken, tokens]);
+  }, [fromAmount]);
 
   // Handle bridge transfer
   const handleBridge = async () => {
     if (!isValidBridge()) {
-      alert('Please check your wallet connections and bridge parameters');
+      showWarning('Invalid Bridge Parameters', 'Please check your wallet connections and bridge amount');
       return;
     }
-
-    const fromTokenData = tokens[fromToken as keyof typeof tokens];
-    const toTokenData = tokens[toToken as keyof typeof tokens];
 
     setBridgeStatus('Preparing bridge transfer...');
     setIsBridging(true);
     setBridgeResult(null);
+    showInfo('Initializing Bridge', 'Preparing cross-chain transfer...');
 
     try {
       // Get providers
@@ -117,24 +172,25 @@ export const BridgeInterface: React.FC<BridgeInterfaceProps> = ({ walletState })
       
       const aptosProvider = (window as any).aptos;
 
-      if (!ethereumProvider && fromTokenData.chain === 'ethereum') {
+      if (!ethereumProvider && fromToken.chain === 'ethereum') {
         throw new Error('MetaMask not found');
       }
       
-      if (!aptosProvider && fromTokenData.chain === 'aptos') {
+      if (!aptosProvider && fromToken.chain === 'aptos') {
         throw new Error('Petra wallet not found');
       }
 
       const bridgeParams: BridgeParams = {
-        fromToken: fromTokenData.symbol,
-        toToken: toTokenData.symbol,
+        fromToken: fromToken.name,
+        toToken: toToken.name,
         fromAmount,
-        fromChain: fromTokenData.chain as 'ethereum' | 'aptos',
-        toChain: toTokenData.chain as 'ethereum' | 'aptos',
+        fromChain: fromToken.chain,
+        toChain: toToken.chain,
         walletState,
       };
 
       setBridgeStatus('Executing bridge transfer...');
+      showInfo('Executing Transfer', 'Please confirm the transaction in your wallet');
       
       const result = await initiateBridgeTransfer(
         bridgeParams,
@@ -145,199 +201,208 @@ export const BridgeInterface: React.FC<BridgeInterfaceProps> = ({ walletState })
       setBridgeResult(result);
       
       if (result.status === 'pending' && result.sourceChainTx) {
-        setBridgeStatus(`Bridge transfer initiated! Transaction: ${result.sourceChainTx?.slice(0, 10)}...`);
+        const shortTxHash = result.sourceChainTx.slice(0, 10) + '...';
+        setBridgeStatus(`Bridge transfer initiated! Transaction: ${shortTxHash}`);
+        showSuccess('Bridge Initiated', `Transaction submitted: ${shortTxHash}`);
         
         // Start real-time monitoring
         await bridgeMonitor.startMonitoring(
           result.requestId,
-          fromTokenData.chain as 'ethereum' | 'aptos',
+          fromToken.chain,
           result.sourceChainTx,
           (monitorUpdate) => {
             setMonitorResult(monitorUpdate);
             setBridgeStatus(monitorUpdate.currentStep);
+            
+            // Show toast updates for key milestones
+            if (monitorUpdate.sourceChainConfirmed && !monitorUpdate.destinationChainConfirmed) {
+              showInfo('Processing', 'Source transaction confirmed, processing cross-chain transfer...');
+            }
+            
+            // Refresh balances when bridge completes
+            if (monitorUpdate.destinationChainConfirmed) {
+              showSuccess('Bridge Complete', 'Cross-chain transfer completed successfully!');
+              setTimeout(() => {
+                fetchMUSDCBalances();
+              }, 2000);
+            }
           }
         );
         
       } else if (result.status === 'failed') {
-        setBridgeStatus(`❌ Bridge failed: ${result.errorMessage}`);
+        const errorMsg = result.errorMessage || 'Unknown error occurred';
+        setBridgeStatus(`❌ Bridge failed: ${errorMsg}`);
+        showError('Bridge Failed', errorMsg);
       }
 
     } catch (error) {
       console.error('Bridge failed:', error);
-      setBridgeStatus(`❌ Bridge failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setBridgeStatus(`❌ Bridge failed: ${errorMessage}`);
+      showError('Bridge Failed', errorMessage);
     } finally {
       setIsBridging(false);
     }
   };
 
-  // Swap token positions
-  const handleSwapTokens = () => {
-    setFromToken(toToken);
-    setToToken(fromToken);
-    setFromAmount(toAmount);
-    setToAmount(fromAmount);
+  // Swap chains
+  const handleSwapChains = () => {
+    setSelectedChain(selectedChain === 'ethereum' ? 'aptos' : 'ethereum');
+    setFromAmount('');
+    setToAmount('');
   };
 
-  const fromTokenData = tokens[fromToken as keyof typeof tokens];
-  const toTokenData = tokens[toToken as keyof typeof tokens];
-  const isSameToken = fromTokenData.symbol === toTokenData.symbol;
-  const isCrossChain = fromTokenData.chain !== toTokenData.chain;
-
   return (
-    <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-6">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Cross-Chain Bridge</h2>
-        <p className="text-sm text-gray-600 mt-1">Single-transaction mUSDC bridge</p>
-        {isSameToken && isCrossChain && (
-          <div className="mt-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-            🎯 1:1 DIRECT BRIDGE
+    <div className="bridge-container">
+      {/* Main Swap Card */}
+      <div className="bridge-card">
+        {/* Header */}
+        <div className="bridge-header">
+          <h2 className="bridge-title">SWAP</h2>
+          <button className="settings-button">
+            <svg className="settings-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Chain Selector */}
+        <div className="chain-selector">
+          <button
+            onClick={() => setSelectedChain('ethereum')}
+            className={`chain-button ${selectedChain === 'ethereum' ? 'active' : 'inactive'}`}
+          >
+            Ethereum
+          </button>
+          <button
+            onClick={() => setSelectedChain('aptos')}
+            className={`chain-button ${selectedChain === 'aptos' ? 'active' : 'inactive'}`}
+          >
+            Aptos
+          </button>
+        </div>
+
+        {/* You Pay Section */}
+        <div className="input-section">
+          <div className="input-label-row">
+            <span className="input-label">You Pay</span>
+            <span className="balance-text">Balance: {fromToken.balance}</span>
           </div>
+          
+          <div className="input-container">
+            <div className="input-row">
+              <input
+                type="number"
+                value={fromAmount}
+                onChange={(e) => setFromAmount(e.target.value)}
+                placeholder="0.0"
+                className="amount-input"
+              />
+              <div className="token-info">
+                <div className="token-icon blue">₿</div>
+                <div className="token-details">
+                  <div className="token-name-container">
+                    <div className="token-name">mUSDC</div>
+                    <div className="token-chain">{selectedChain === 'ethereum' ? 'ETH' : 'APT'}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Swap Arrow */}
+        <div className="swap-button-container">
+          <button onClick={handleSwapChains} className="swap-button">
+            <svg className="swap-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
+
+        {/* You Receive Section */}
+        <div className="input-section">
+          <div className="input-label-row">
+            <span className="input-label">You Receive</span>
+            <span className="balance-text">Balance: {toToken.balance}</span>
+          </div>
+          
+          <div className="input-container">
+            <div className="input-row">
+              <div className="amount-input" style={{ cursor: 'default' }}>
+                {toAmount || '0.0'}
+              </div>
+              <div className="token-info">
+                <div className="token-icon blue-light">💎</div>
+                <div className="token-details">
+                  <div className="token-name-container">
+                    <div className="token-name">mUSDC</div>
+                    <div className="token-chain">{selectedChain === 'ethereum' ? 'APT' : 'ETH'}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Connect Wallet / Bridge Button */}
+        {!walletState.ethereum.connected || !walletState.aptos.connected ? (
+          <button className="bridge-button connect">
+            Connect Wallet
+          </button>
+        ) : (
+          <button
+            onClick={handleBridge}
+            disabled={!isValidBridge() || isBridging}
+            className={`bridge-button ${
+              isValidBridge() && !isBridging ? 'active' : 'disabled'
+            }`}
+          >
+            {isBridging ? 'Bridging...' : 'Bridge Tokens'}
+          </button>
         )}
       </div>
 
-      {/* From Token */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">From</label>
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="flex justify-between items-center mb-2">
-            <select
-              value={fromToken}
-              onChange={(e) => setFromToken(e.target.value)}
-              className="text-lg font-semibold bg-transparent border-none outline-none"
-            >
-              {Object.entries(tokens).map(([key, token]) => (
-                <option key={key} value={key}>{token.displayName} ({token.chain})</option>
-              ))}
-            </select>
-            <span className="text-sm text-gray-500">
-              {fromTokenData.chain === 'ethereum' ? '🦊' : '🟣'} {fromTokenData.chain}
-            </span>
-          </div>
-          <input
-            type="number"
-            value={fromAmount}
-            onChange={(e) => setFromAmount(e.target.value)}
-            placeholder="0.00"
-            className="w-full text-2xl font-bold bg-transparent border-none outline-none"
-          />
-          <div className="text-xs text-gray-500 mt-1">
-            Balance: {fromTokenData.chain === 'ethereum' ? walletState.ethereum.balance : walletState.aptos.balance || '0.00'}
-          </div>
-        </div>
-      </div>
-
-      {/* Swap Button */}
-      <div className="flex justify-center mb-4">
-        <button
-          onClick={handleSwapTokens}
-          className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full transition-colors"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-          </svg>
-        </button>
-      </div>
-
-      {/* To Token */}
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">To</label>
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="flex justify-between items-center mb-2">
-            <select
-              value={toToken}
-              onChange={(e) => setToToken(e.target.value)}
-              className="text-lg font-semibold bg-transparent border-none outline-none"
-            >
-              {Object.entries(tokens).map(([key, token]) => (
-                <option key={key} value={key}>{token.displayName} ({token.chain})</option>
-              ))}
-            </select>
-            <span className="text-sm text-gray-500">
-              {toTokenData.chain === 'ethereum' ? '🦊' : '🟣'} {toTokenData.chain}
-            </span>
-          </div>
-          <div className="text-2xl font-bold text-gray-900">
-            {toAmount || '0.00'}
-          </div>
-          <div className="text-xs text-gray-500 mt-1">
-            {isSameToken && isCrossChain ? '1:1 Direct Bridge' : 'Invalid bridge pair'}
-          </div>
-        </div>
-      </div>
-
-      {/* Bridge Details */}
-      {isValidBridge() && (
-        <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-          <h3 className="font-semibold text-blue-900 mb-2">Bridge Details</h3>
-          <div className="text-sm space-y-1">
-            <div className="flex justify-between">
-              <span className="text-blue-700">Bridge Fee:</span>
-              <span className="text-blue-900">0.1%</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-blue-700">Processing Time:</span>
-              <span className="text-blue-900">~1 minute</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-blue-700">Type:</span>
-              <span className="text-blue-900">Single Transaction</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bridge Button */}
-      <button
-        onClick={handleBridge}
-        disabled={!isValidBridge() || isBridging}
-        className={`w-full py-4 px-6 rounded-lg font-semibold text-lg transition-colors ${
-          isValidBridge() && !isBridging
-            ? 'bg-blue-600 hover:bg-blue-700 text-white'
-            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-        }`}
-      >
-        {isBridging ? 'Bridging...' : 'Bridge Tokens'}
-      </button>
-
       {/* Bridge Status */}
       {bridgeStatus && (
-        <div className="mt-4 p-3 bg-gray-100 rounded-lg">
-          <p className="text-sm font-medium text-gray-700">{bridgeStatus}</p>
+        <div className="status-card">
+          <p className="status-text">{bridgeStatus}</p>
         </div>
       )}
 
       {/* Bridge Progress Monitoring */}
       {monitorResult && (
-        <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-          <h3 className="font-semibold text-blue-900 mb-3">Bridge Progress</h3>
+        <div className="progress-card">
+          <h3 className="progress-title">Bridge Progress</h3>
           
           {/* Progress Steps */}
-          <div className="space-y-3">
-            <div className="flex items-center space-x-3">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                monitorResult.sourceChainConfirmed ? 'bg-green-500 text-white' : 
-                monitorResult.status === 'pending' ? 'bg-yellow-500 text-white' : 'bg-gray-300 text-gray-600'
+          <div className="progress-steps">
+            <div className="progress-step">
+              <div className={`step-indicator ${
+                monitorResult.sourceChainConfirmed ? 'completed' : 
+                monitorResult.status === 'pending' ? 'pending' : 'waiting'
               }`}>
                 {monitorResult.sourceChainConfirmed ? '✓' : '1'}
               </div>
-              <div className="flex-1">
-                <div className="text-sm font-medium">Source Chain Lock</div>
-                <div className="text-xs text-gray-600">
+              <div className="step-content">
+                <div className="step-title">Source Chain Lock</div>
+                <div className="step-description">
                   {monitorResult.sourceChainConfirmed ? 'Tokens locked successfully' : 'Confirming transaction...'}
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center space-x-3">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                monitorResult.destinationChainConfirmed ? 'bg-green-500 text-white' : 
-                monitorResult.status === 'processing' ? 'bg-yellow-500 text-white' : 'bg-gray-300 text-gray-600'
+            <div className="progress-step">
+              <div className={`step-indicator ${
+                monitorResult.destinationChainConfirmed ? 'completed' : 
+                monitorResult.status === 'processing' ? 'pending' : 'waiting'
               }`}>
                 {monitorResult.destinationChainConfirmed ? '✓' : '2'}
               </div>
-              <div className="flex-1">
-                <div className="text-sm font-medium">Relayer Processing</div>
-                <div className="text-xs text-gray-600">
+              <div className="step-content">
+                <div className="step-title">Relayer Processing</div>
+                <div className="step-description">
                   {monitorResult.destinationChainConfirmed ? 'Tokens released successfully' : 
                    monitorResult.status === 'processing' ? 'Processing cross-chain transfer...' : 'Waiting for lock confirmation'}
                 </div>
@@ -346,10 +411,10 @@ export const BridgeInterface: React.FC<BridgeInterfaceProps> = ({ walletState })
           </div>
 
           {/* Current Status */}
-          <div className="mt-4 p-3 bg-white rounded border-l-4 border-blue-500">
-            <div className="text-sm font-medium text-blue-900">{monitorResult.currentStep}</div>
+          <div className="current-status">
+            <div className="current-status-text">{monitorResult.currentStep}</div>
             {monitorResult.estimatedCompletionTime > 0 && (
-              <div className="text-xs text-blue-700 mt-1">
+              <div className="time-remaining">
                 Estimated time remaining: {monitorResult.estimatedCompletionTime}s
               </div>
             )}
@@ -357,12 +422,11 @@ export const BridgeInterface: React.FC<BridgeInterfaceProps> = ({ walletState })
 
           {/* Transaction Links */}
           {monitorResult.transactionHashes.source && (
-            <div className="mt-3 text-xs">
+            <div className="transaction-link">
               <a 
                 href={`https://sepolia.etherscan.io/tx/${monitorResult.transactionHashes.source}`}
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-800"
               >
                 View source transaction ↗
               </a>
@@ -371,38 +435,26 @@ export const BridgeInterface: React.FC<BridgeInterfaceProps> = ({ walletState })
         </div>
       )}
 
-      {/* Bridge Result (Fallback) */}
-      {bridgeResult && !monitorResult && (
-        <div className="mt-4 p-4 bg-green-50 rounded-lg">
-          <h3 className="font-semibold text-green-900 mb-2">Bridge Result</h3>
-          <div className="text-sm space-y-1">
-            <div><strong>Status:</strong> {bridgeResult.status}</div>
-            <div><strong>Amount:</strong> {bridgeResult.amount} mUSDC</div>
-            {bridgeResult.sourceChainTx && (
-              <div><strong>Transaction:</strong> <code className="text-xs">{bridgeResult.sourceChainTx}</code></div>
-            )}
+      {/* Wallet Connection Status */}
+      {!hideWalletStatus && (
+        <div className="wallet-status-card">
+          <h3 className="wallet-status-title">Wallet Status</h3>
+          <div className="wallet-status-list">
+            <div className="wallet-status-item">
+              <span className="wallet-name">🦊 Ethereum (MetaMask):</span>
+              <span className={`wallet-status ${walletState.ethereum.connected ? 'connected' : 'disconnected'}`}>
+                {walletState.ethereum.connected ? '✅ Connected' : '❌ Disconnected'}
+              </span>
+            </div>
+            <div className="wallet-status-item">
+              <span className="wallet-name">🟣 Aptos (Petra):</span>
+              <span className={`wallet-status ${walletState.aptos.connected ? 'connected' : 'disconnected'}`}>
+                {walletState.aptos.connected ? '✅ Connected' : '❌ Disconnected'}
+              </span>
+            </div>
           </div>
         </div>
       )}
-
-      {/* Wallet Connection Status */}
-      <div className="mt-6 pt-4 border-t border-gray-200">
-        <h3 className="font-semibold text-gray-900 mb-2">Wallet Status</h3>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span>🦊 Ethereum (MetaMask):</span>
-            <span className={walletState.ethereum.connected ? 'text-green-600' : 'text-red-600'}>
-              {walletState.ethereum.connected ? '✅ Connected' : '❌ Disconnected'}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span>🟣 Aptos (Petra):</span>
-            <span className={walletState.aptos.connected ? 'text-green-600' : 'text-red-600'}>
-              {walletState.aptos.connected ? '✅ Connected' : '❌ Disconnected'}
-            </span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

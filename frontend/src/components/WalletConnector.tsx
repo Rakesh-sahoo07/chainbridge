@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '../contexts/WalletContext';
+import { useToast } from '../contexts/ToastContext';
 
 // Network configurations
 const SEPOLIA_CHAIN_ID = '0xaa36a7'; // 11155111 in hex
@@ -17,6 +18,7 @@ const SEPOLIA_CONFIG = {
 
 export const WalletConnector: React.FC = () => {
   const { walletState, connectEthereum, connectAptos, disconnectEthereum, disconnectAptos } = useWallet();
+  const { showSuccess, showError, showWarning, showInfo } = useToast();
   const [isConnecting, setIsConnecting] = useState<'ethereum' | 'aptos' | null>(null);
 
   // Check if wallets are installed
@@ -29,56 +31,6 @@ export const WalletConnector: React.FC = () => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
-  // Debug function to check Petra network info
-  const debugPetraNetwork = async () => {
-    if (!(window as any).aptos) {
-      console.log('Petra wallet not found');
-      return;
-    }
-
-    console.log('=== Petra Network Debug ===');
-    
-    // Check all available methods and properties
-    console.log('Available Petra methods:', Object.keys((window as any).aptos));
-    
-    // Try getChainId
-    if ((window as any).aptos.getChainId) {
-      try {
-        const chainId = await (window as any).aptos.getChainId();
-        console.log('getChainId():', chainId);
-      } catch (e) {
-        console.log('getChainId() error:', e);
-      }
-    }
-    
-    // Try network
-    if ((window as any).aptos.network) {
-      try {
-        const network1 = await (window as any).aptos.network();
-        console.log('network() as function:', network1);
-      } catch (e) {
-        console.log('network() as function error:', e);
-        try {
-          const network2 = (window as any).aptos.network;
-          console.log('network as property:', network2);
-        } catch (e2) {
-          console.log('network as property error:', e2);
-        }
-      }
-    }
-    
-    // Try getAccount
-    if ((window as any).aptos.getAccount) {
-      try {
-        const account = await (window as any).aptos.getAccount();
-        console.log('getAccount():', account);
-      } catch (e) {
-        console.log('getAccount() error:', e);
-      }
-    }
-    
-    console.log('=== End Debug ===');
-  };
 
   // Switch to Sepolia network
   const switchToSepolia = async () => {
@@ -114,22 +66,24 @@ export const WalletConnector: React.FC = () => {
   // Connect to MetaMask
   const connectMetaMask = async () => {
     if (!isMetaMaskInstalled || !window.ethereum) {
-      alert('MetaMask is not installed. Please install MetaMask extension first.');
+      showError('MetaMask Not Found', 'Please install MetaMask extension first.');
       window.open('https://metamask.io/download/', '_blank');
       return;
     }
 
     try {
       setIsConnecting('ethereum');
+      showInfo('Connecting...', 'Please approve the connection in MetaMask');
       
       // Check current network
       const chainId = await window.ethereum?.request({ method: 'eth_chainId' });
       
       // If not on Sepolia, prompt to switch
       if (chainId !== SEPOLIA_CHAIN_ID) {
+        showWarning('Network Switch Required', 'Switching to Sepolia testnet...');
         const switched = await switchToSepolia();
         if (!switched) {
-          alert('Please switch to Sepolia testnet to use ChainBridge Protocol.');
+          showError('Network Switch Failed', 'Please manually switch to Sepolia testnet in MetaMask.');
           setIsConnecting(null);
           return;
         }
@@ -137,12 +91,13 @@ export const WalletConnector: React.FC = () => {
       
       // Use context connect method
       await connectEthereum();
+      showSuccess('MetaMask Connected', 'Successfully connected to Ethereum wallet');
     } catch (error: any) {
       console.error('Failed to connect MetaMask:', error);
       if (error.code === 4001) {
-        alert('Please connect to MetaMask.');
+        showWarning('Connection Cancelled', 'Please approve the connection in MetaMask to continue.');
       } else {
-        alert('An error occurred while connecting to MetaMask.');
+        showError('Connection Failed', 'An error occurred while connecting to MetaMask.');
       }
     } finally {
       setIsConnecting(null);
@@ -165,7 +120,7 @@ export const WalletConnector: React.FC = () => {
           if (chainId && chainId.chainId === 2) {
             return true; // Testnet confirmed
           } else if (chainId && chainId.chainId !== 2) {
-            alert('Please switch Petra Wallet to Testnet for ChainBridge Protocol.\n\nGo to Petra Settings → Network → Select Testnet');
+            showWarning('Wrong Network', 'Please switch Petra Wallet to Testnet. Go to Petra Settings → Network → Select Testnet');
             return false;
           }
         } catch (e) {
@@ -197,7 +152,7 @@ export const WalletConnector: React.FC = () => {
         if (networkStr.includes('testnet') || networkStr.includes('test') || networkStr.includes('devnet')) {
           return true;
         } else if (networkStr.includes('mainnet') || networkStr.includes('main')) {
-          alert('Please switch Petra Wallet to Testnet for ChainBridge Protocol.\n\nGo to Petra Settings → Network → Select Testnet');
+          showWarning('Wrong Network', 'Please switch Petra Wallet to Testnet. Go to Petra Settings → Network → Select Testnet');
           return false;
         }
       }
@@ -214,13 +169,14 @@ export const WalletConnector: React.FC = () => {
   // Connect to Petra Wallet
   const connectPetra = async () => {
     if (!isPetraInstalled || !(window as any).aptos) {
-      alert('Petra Wallet is not installed. Please install Petra Wallet extension first.');
+      showError('Petra Wallet Not Found', 'Please install Petra Wallet extension first.');
       window.open('https://petra.app/', '_blank');
       return;
     }
 
     try {
       setIsConnecting('aptos');
+      showInfo('Connecting...', 'Please approve the connection in Petra Wallet');
       
       // Check/switch to testnet
       const isTestnet = await switchPetraToTestnet();
@@ -231,12 +187,13 @@ export const WalletConnector: React.FC = () => {
       
       // Use context connect method
       await connectAptos();
+      showSuccess('Petra Wallet Connected', 'Successfully connected to Aptos wallet');
     } catch (error: any) {
       console.error('Failed to connect Petra:', error);
       if (error.code === 4001) {
-        alert('Please connect to Petra Wallet.');
+        showWarning('Connection Cancelled', 'Please approve the connection in Petra Wallet to continue.');
       } else {
-        alert('An error occurred while connecting to Petra Wallet.');
+        showError('Connection Failed', 'An error occurred while connecting to Petra Wallet.');
       }
     } finally {
       setIsConnecting(null);
@@ -278,43 +235,51 @@ export const WalletConnector: React.FC = () => {
   }, [isMetaMaskInstalled, isPetraInstalled]);
 
   return (
-    <div className="flex space-x-4">
+    <div className="flex space-x-3">
       {/* Ethereum Wallet */}
       <div className="flex flex-col items-end">
         {walletState.ethereum.connected ? (
-          <div className="cyber-card p-3 min-w-140">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-xs text-gray-400">Ethereum</span>
+          <div className="modern-wallet-card">
+            <div className="wallet-header">
+              <div className="wallet-status">
+                <div className="status-dot ethereum"></div>
+                <span className="wallet-chain-label">Ethereum</span>
               </div>
               <button
                 onClick={disconnectEthereum}
-                className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                className="disconnect-btn"
+                title="Disconnect"
               >
-                ×
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
               </button>
             </div>
-            <p className="text-sm font-mono text-green-400">
+            <div className="wallet-address">
               {formatAddress(walletState.ethereum.address!)}
-            </p>
-            <p className="text-xs text-gray-400">
+            </div>
+            <div className="wallet-balance">
               {walletState.ethereum.balance} ETH
-            </p>
+            </div>
           </div>
         ) : (
           <button
             onClick={connectMetaMask}
             disabled={isConnecting === 'ethereum'}
-            className={`cyber-button ${
-              isConnecting === 'ethereum' ? 'opacity-50 cursor-not-allowed' : ''
+            className={`modern-connect-btn ethereum ${
+              isConnecting === 'ethereum' ? 'connecting' : ''
             }`}
           >
-            {isConnecting === 'ethereum' ? (
-              <span className="loading-dots">Connecting</span>
-            ) : (
-              'Connect MetaMask'
-            )}
+            <div className="btn-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L2 7l10 5 10-5-10-5z" fill="currentColor" opacity="0.6"/>
+                <path d="m2 17 10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" fill="none"/>
+              </svg>
+            </div>
+            <span>
+              {isConnecting === 'ethereum' ? 'Connecting...' : 'Connect Ethereum'}
+            </span>
           </button>
         )}
       </div>
@@ -322,51 +287,48 @@ export const WalletConnector: React.FC = () => {
       {/* Aptos Wallet */}
       <div className="flex flex-col items-end">
         {walletState.aptos.connected ? (
-          <div className="cyber-card p-3 min-w-140">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-xs text-gray-400">Aptos</span>
+          <div className="modern-wallet-card">
+            <div className="wallet-header">
+              <div className="wallet-status">
+                <div className="status-dot aptos"></div>
+                <span className="wallet-chain-label">Aptos</span>
               </div>
               <button
                 onClick={disconnectAptos}
-                className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                className="disconnect-btn"
+                title="Disconnect"
               >
-                ×
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
               </button>
             </div>
-            <p className="text-sm font-mono text-green-400">
+            <div className="wallet-address">
               {formatAddress(walletState.aptos.address!)}
-            </p>
-            <p className="text-xs text-gray-400">
+            </div>
+            <div className="wallet-balance">
               {walletState.aptos.balance} APT
-            </p>
+            </div>
           </div>
         ) : (
-          <div className="flex flex-col space-y-2">
-            <button
-              onClick={connectPetra}
-              disabled={isConnecting === 'aptos'}
-              className={`cyber-button ${
-                isConnecting === 'aptos' ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-            >
-              {isConnecting === 'aptos' ? (
-                <span className="loading-dots">Connecting</span>
-              ) : (
-                'Connect Petra'
-              )}
-            </button>
-            {isPetraInstalled && (
-              <button
-                onClick={debugPetraNetwork}
-                className="text-xs text-gray-400 hover:text-green-400 transition-colors"
-                style={{ fontSize: '10px', padding: '2px 4px' }}
-              >
-                Debug Network
-              </button>
-            )}
-          </div>
+          <button
+            onClick={connectPetra}
+            disabled={isConnecting === 'aptos'}
+            className={`modern-connect-btn aptos ${
+              isConnecting === 'aptos' ? 'connecting' : ''
+            }`}
+          >
+            <div className="btn-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none"/>
+                <path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2Z" fill="currentColor" opacity="0.6"/>
+              </svg>
+            </div>
+            <span>
+              {isConnecting === 'aptos' ? 'Connecting...' : 'Connect Aptos'}
+            </span>
+          </button>
         )}
       </div>
     </div>

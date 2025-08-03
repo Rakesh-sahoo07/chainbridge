@@ -1,0 +1,23 @@
+/* PP Neue Montreal Font Fallback System */
+/* Use modern, clean sans-serif fonts as alternatives until actual font files are available */
+
+/* Fallback font stack that mimics PP Neue Montreal characteristics */
+:root {
+  --pp-neue-montreal-fallback: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Override PP Neue Montreal references to use high-quality fallbacks */
+.pp-neue-montreal,
+[style*="font-family: 'PP Neue Montreal'"],
+body {
+  font-family: var(--pp-neue-montreal-fallback) !important;
+}
+
+/* Improved typography for bridge interface */
+.bridge-title,
+.chain-button,
+.token-name {
+  font-family: var(--pp-neue-montreal-fallback) !important;
+  letter-spacing: -0.025em;
+  font-feature-settings: 'kern' 1, 'liga' 1;
+}

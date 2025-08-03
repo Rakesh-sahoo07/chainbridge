@@ -1,0 +1,441 @@
+/* Import Orbitron font variable */
+:root {
+  --orbitron-font: 'Orbitron', 'Courier New', monospace;
+}
+
+.bridge-container {
+  max-width: 32rem;
+  margin: 0 auto;
+}
+
+.bridge-card {
+  background-color: #0f161f;
+  border-radius: 1.5rem;
+  border: 1px solid #7FFB50;
+  padding: 1.5rem;
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(127, 251, 80, 0.1),
+    0 0 20px rgba(127, 251, 80, 0.15),
+    0 0 40px rgba(127, 251, 80, 0.1),
+    0 0 80px rgba(127, 251, 80, 0.05);
+}
+
+.bridge-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.bridge-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: white;
+  margin: 0;
+  font-family: var(--orbitron-font);
+  letter-spacing: 0.05em;
+}
+
+.settings-button {
+  color: #9ca3af;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: color 0.2s;
+}
+
+.settings-button:hover {
+  color: white;
+}
+
+.settings-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+/* Chain Selector */
+.chain-selector {
+  display: flex;
+  background-color: white;
+  border-radius: 1rem;
+  padding: 0.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.chain-button {
+  flex: 1;
+  padding: 0.875rem 1.75rem;
+  border-radius: 0.75rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--orbitron-font);
+  letter-spacing: 0.03em;
+}
+
+.chain-button.active {
+  background-color: #7FFB50;
+  color: #1f2937;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.chain-button.inactive {
+  background-color: transparent;
+  color: #6b7280;
+}
+
+.chain-button.inactive:hover {
+  color: #374151;
+}
+
+/* Input Sections */
+.input-section {
+  margin-bottom: 1rem;
+}
+
+.input-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.input-label {
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.balance-text {
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.input-container {
+  background-color: #111827;
+  border-radius: 1rem;
+  padding: 1rem;
+  border: 1px solid #374151;
+}
+
+.input-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.amount-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: white;
+  font-size: 1.875rem;
+  font-weight: 600;
+  flex: 1;
+  margin-right: 1rem;
+  width: 60%;
+}
+
+.amount-input::placeholder {
+  color: #6b7280;
+}
+
+/* Hide number input arrows */
+.amount-input::-webkit-outer-spin-button,
+.amount-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.amount-input[type=number] {
+  -moz-appearance: textfield;
+}
+
+.token-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.token-icon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: bold;
+  color: white;
+}
+
+.token-icon.blue {
+  background-color: #3b82f6;
+}
+
+.token-icon.blue-light {
+  background-color: #60a5fa;
+}
+
+.token-details {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.token-name-container {
+  text-align: right;
+}
+
+.token-name {
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.token-chain {
+  color: #9ca3af;
+  font-size: 0.8rem;
+  line-height: 1.2;
+}
+
+/* Swap Button */
+.swap-button-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.swap-button {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  padding: 0.75rem;
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.swap-button:hover {
+  background-color: #f3f4f6;
+}
+
+.swap-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #4b5563;
+}
+
+/* Bridge Button */
+.bridge-button {
+  width: 100%;
+  padding: 1rem;
+  border-radius: 1rem;
+  font-size: 1.125rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-family: var(--orbitron-font);
+  background-color: #7FFB50;
+  color: #1f2937;
+}
+
+.bridge-button.connect {
+  background-color: #7FFB50;
+  color: #1f2937;
+  
+}
+
+.bridge-button.connect:hover {
+  background-color: #6FEB40;
+}
+
+.bridge-button.active {
+  background-color: #7FFB50;
+  color: #1f2937;
+}
+
+.bridge-button.active:hover {
+  background-color: #89ff5f;
+}
+
+.bridge-button.disabled {
+  background-color: #4b5563;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Status and Progress */
+.status-card {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: #1f2937;
+  border-radius: 1rem;
+  border: 1px solid #374151;
+}
+
+.status-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: white;
+}
+
+.progress-card {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background-color: #1f2937;
+  border-radius: 1rem;
+  border: 1px solid #374151;
+}
+
+.progress-title {
+  font-weight: 600;
+  color: #7FFB50;
+  margin-bottom: 1rem;
+  font-size: 1.125rem;
+}
+
+.progress-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.progress-step {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.step-indicator {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: bold;
+}
+
+.step-indicator.completed {
+  background-color: #7FFB50;
+  color: #1f2937;
+}
+
+.step-indicator.pending {
+  background-color: #eab308;
+  color: white;
+}
+
+.step-indicator.waiting {
+  background-color: #4b5563;
+  color: #d1d5db;
+}
+
+.step-content {
+  flex: 1;
+}
+
+.step-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: white;
+}
+
+.step-description {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.current-status {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background-color: #111827;
+  border-radius: 0.75rem;
+  border-left: 4px solid #7FFB50;
+}
+
+.current-status-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #7FFB50;
+}
+
+.time-remaining {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-top: 0.25rem;
+}
+
+.transaction-link {
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+}
+
+.transaction-link a {
+  color: #7FFB50;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.transaction-link a:hover {
+  color: #6FEB40;
+}
+
+/* Wallet Status */
+.wallet-status-card {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background-color: #1f2937;
+  border-radius: 1rem;
+  border: 1px solid #374151;
+}
+
+.wallet-status-title {
+  font-weight: 600;
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.wallet-status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.wallet-status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wallet-name {
+  color: #d1d5db;
+}
+
+.wallet-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.wallet-status.connected {
+  color: #7FFB50;
+  background-color: #064e3b;
+}
+
+.wallet-status.disconnected {
+  color: #fca5a5;
+  background-color: #7f1d1d;
+}

@@ -46,11 +46,13 @@ export interface WalletState {
 export interface ContractAddresses {
   ethereum: {
     crossChainSwap: string;
+    crossChainBridge: string;
     tokenManager: string;
     mockUSDC: string;
   };
   aptos: {
     crossChainSwap: string;
+    crossChainBridge: string;
     tokenRegistry: string;
   };
 }
